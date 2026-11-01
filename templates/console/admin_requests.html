@@ -1,0 +1,73 @@
+{% extends "console/base.html" %}
+{% load humanize %}
+
+{% block title %}Requests · LifeLink console{% endblock %}
+
+{% block dashboard %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Request oversight</h1>
+    <p class="page-sub">{{ total|intcomma }} request{{ total|pluralize }} in this view. Open a request to change its status with an audit note.</p>
+  </div>
+  <a class="btn-ll btn-ll--ghost btn-ll--sm" href="{% url 'console:export_csv' 'requests' %}">
+    <i class="bi bi-filetype-csv" aria-hidden="true"></i> Export CSV
+  </a>
+</div>
+
+<form class="filter-bar" method="get">
+  <div class="row g-3 align-items-end">
+    <div class="col-lg-4">
+      <label class="form-label" for="q">Search</label>
+      <input class="form-control" type="search" id="q" name="q" value="{{ filters.q }}" placeholder="Reference, patient, hospital or city">
+    </div>
+    <div class="col-lg-3">
+      <label class="form-label" for="status">Status</label>
+      <select class="form-select" id="status" name="status">
+        <option value="">Any status</option>
+        <option value="open" {% if filters.status == 'open' %}selected{% endif %}>All open</option>
+        {% for code, label in statuses %}
+          <option value="{{ code }}" {% if filters.status == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-lg-3">
+      <label class="form-label" for="urgency">Priority</label>
+      <select class="form-select" id="urgency" name="urgency">
+        <option value="">Any priority</option>
+        {% for code, label in urgencies %}
+          <option value="{{ code }}" {% if filters.urgency == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-lg-2">
+      <button class="btn-ll btn-ll--ink btn-ll--sm w-100" type="submit">Apply</button>
+    </div>
+  </div>
+</form>
+
+<div class="table-wrap">
+  <table class="table-ruled">
+    <thead>
+      <tr><th>Reference</th><th>Patient / hospital</th><th>Group</th><th>City</th><th>Priority</th><th>Status</th><th>Responses</th><th>Needed</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for item in page.object_list %}
+        <tr>
+          <td class="num tiny">{{ item.reference }}</td>
+          <td>{{ item.patient_name }}<span class="d-block tiny muted">{{ item.hospital_name }}</span></td>
+          <td class="num fw-semibold">{{ item.blood_group }}</td>
+          <td class="tiny">{{ item.city }}</td>
+          <td><span class="chip {{ item.urgency_chip_class }}">{{ item.get_urgency_display }}</span></td>
+          <td><span class="chip {{ item.status_chip_class }}">{{ item.get_status_display }}</span></td>
+          <td class="num">{{ item.response_total }}</td>
+          <td class="tiny">{{ item.required_by|date:"d M" }}</td>
+          <td class="text-end"><a class="btn-ll btn-ll--ghost btn-ll--sm" href="{{ item.get_absolute_url }}">Open</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="9" class="tiny muted">No request matches those filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}

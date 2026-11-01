@@ -1,0 +1,11 @@
+{% if messages %}
+  <div class="mb-3" role="status" aria-live="polite">
+    {% for message in messages %}
+      <div class="alert {{ message.tags|default:'alert-info' }} alert-dismissible" role="alert">
+        <i class="bi {% if 'success' in message.tags %}bi-check-circle{% elif 'danger' in message.tags or 'error' in message.tags %}bi-exclamation-triangle{% elif 'warning' in message.tags %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}" aria-hidden="true"></i>
+        <div>{{ message }}</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Dismiss"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

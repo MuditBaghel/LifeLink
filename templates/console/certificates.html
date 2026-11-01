@@ -1,0 +1,45 @@
+{% extends "console/base.html" %}
+
+{% block title %}Certificates · LifeLink{% endblock %}
+
+{% block dashboard %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Donation certificates</h1>
+    <p class="page-sub">Issued automatically when a donation is verified. Each reference can be checked by anyone.</p>
+  </div>
+  <a class="btn-ll btn-ll--ghost btn-ll--sm" href="{% url 'console:my_donations' %}">Donation history</a>
+</div>
+
+{% if certificates %}
+  <div class="row g-3">
+    {% for certificate in certificates %}
+      <div class="col-md-6">
+        <div class="cert-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div>
+              <p class="meta mb-1">Certificate</p>
+              <p class="cert-card__ref mb-0">{{ certificate.reference }}</p>
+            </div>
+            <span class="chip chip--ok"><i class="bi bi-patch-check-fill" aria-hidden="true"></i>Verified</span>
+          </div>
+          <dl class="mb-3">
+            <div class="ticket__row"><dt>Donation date</dt><dd>{{ certificate.donation.donation_date|date:"d M Y" }}</dd></div>
+            <div class="ticket__row"><dt>Units</dt><dd>{{ certificate.donation.units }}</dd></div>
+            <div class="ticket__row"><dt>Centre</dt><dd>{{ certificate.donation.hospital }}</dd></div>
+          </dl>
+          <div class="d-flex gap-2 flex-wrap">
+            <a class="btn-ll btn-ll--primary btn-ll--sm" href="{% url 'donations:certificate_download' certificate.reference %}">
+              <i class="bi bi-download" aria-hidden="true"></i> Download PDF
+            </a>
+            <a class="btn-ll btn-ll--ghost btn-ll--sm" href="{% url 'donations:certificate_verify' certificate.reference %}">Public check</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  {% url 'console:my_donations' as history_url %}
+  {% include "partials/empty.html" with icon="bi-patch-check" title="No certificate yet" body="Your first certificate is issued after an administrator verifies a donation record." action_url=history_url action_label="See donation history" %}
+{% endif %}
+{% endblock %}

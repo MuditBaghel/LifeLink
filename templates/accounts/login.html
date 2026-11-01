@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Sign in · LifeLink{% endblock %}
+
+{% block content %}
+<div class="auth">
+  <div class="auth__panel">
+    <div class="auth__card">
+      <h1 class="h2 mb-1">Sign in to LifeLink</h1>
+      <p class="muted mb-4" style="font-size:.94rem">
+        Donor, recipient and administrator accounts use the same sign-in.
+      </p>
+
+      {% include "partials/messages.html" %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            <div>{{ form.non_field_errors }}</div>
+          </div>
+        {% endif %}
+        {% include "partials/field.html" with field=form.username %}
+        {% include "partials/field.html" with field=form.password %}
+
+        <button class="btn-ll btn-ll--primary btn-ll--block mt-2" type="submit">Sign in</button>
+      </form>
+
+      <div class="auth-divider">or</div>
+
+      <a class="btn-ll btn-ll--ghost btn-ll--block" href="{% url 'accounts:register' %}">Create a donor or recipient account</a>
+
+      <p class="tiny muted mt-3 mb-0">
+        Exploring the demonstration? <a class="link-ll" href="{% url 'core:demo_accounts' %}">Use a demo account</a>.
+      </p>
+    </div>
+  </div>
+
+  <aside class="auth__aside">
+    <div>
+      <a class="footer-brand mb-4" href="{% url 'core:home' %}">
+        <span class="brand__mark" aria-hidden="true"><i class="bi bi-droplet-fill"></i></span>
+        <span>
+          <span class="brand__name">LifeLink</span>
+          <span class="brand__tag">Blood coordination</span>
+        </span>
+      </a>
+      <h2 class="h2 mb-2">Everyone sees the right part of the donation</h2>
+      <p class="mb-0">
+        Donors see compatible requests. Recipients see the donor responses and the request timeline.
+        Administrators verify the record before anything is counted.
+      </p>
+    </div>
+
+    <ul class="auth-aside__list">
+      <li><i class="bi bi-diagram-3" aria-hidden="true"></i><span>Compatibility shown per donor, with the reason attached</span></li>
+      <li><i class="bi bi-shield-check" aria-hidden="true"></i><span>Only verified donations unlock certificates and achievements</span></li>
+      <li><i class="bi bi-qr-code" aria-hidden="true"></i><span>Camp registrations carry a QR ticket checked by staff</span></li>
+      <li><i class="bi bi-bell" aria-hidden="true"></i><span>Notification preferences stop the noise you do not want</span></li>
+    </ul>
+
+    <p class="tiny mb-0" style="color:#8494a8">
+      Blood group compatibility here is preliminary red-cell guidance, not medical approval for transfusion.
+    </p>
+  </aside>
+</div>
+{% endblock %}
