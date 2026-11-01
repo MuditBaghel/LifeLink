@@ -1,0 +1,284 @@
+{% extends "console/base.html" %}
+{% load humanize %}
+
+{% block title %}Donor dashboard · LifeLink{% endblock %}
+
+{% block dashboard %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Hello, {{ user.first_name|default:user.username }}</h1>
+    <p class="page-sub">
+      {{ donor.blood_group }} donor in {{ donor.city }} ·
+      {% if donor.is_available %}available for contact{% else %}availability is off{% endif %}
+    </p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <form method="post" action="{% url 'console:toggle_availability' %}">
+      {% csrf_token %}
+      <button class="btn-ll {% if donor.is_available %}btn-ll--ghost{% else %}btn-ll--primary{% endif %} btn-ll--sm" type="submit">
+        <i class="bi {% if donor.is_available %}bi-toggle-on{% else %}bi-toggle-off{% endif %}" aria-hidden="true"></i>
+        {% if donor.is_available %}Turn availability off{% else %}Turn availability on{% endif %}
+      </button>
+    </form>
+    <a class="btn-ll btn-ll--ink btn-ll--sm" href="{% url 'blood:request_list' %}">Browse requests</a>
+  </div>
+</div>
+
+<div class="kpi-grid mb-4">
+  <div class="kpi">
+    <div class="kpi__label"><i class="bi bi-clock-history" aria-hidden="true"></i> Eligibility</div>
+    <div class="kpi__value" style="font-size:1.15rem">
+      {% if donor.is_eligible %}Eligible now{% else %}{{ donor.days_until_eligible }} days{% endif %}
+    </div>
+    <div class="kpi__note">
+      {% if not donor.next_eligible_date %}
+        No donation recorded yet
+      {% elif donor.is_eligible %}
+        Eligible since {{ donor.next_eligible_date|date:"d M Y" }}
+      {% else %}
+        Eligible from {{ donor.next_eligible_date|date:"d M Y" }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label"><i class="bi bi-patch-check" aria-hidden="true"></i> Verified donations</div>
+    <div class="kpi__value">{{ donation_count }}</div>
+    <div class="kpi__note">{{ pending_donations|length }} awaiting verification</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label"><i class="bi bi-droplet" aria-hidden="true"></i> Units contributed</div>
+    <div class="kpi__value">{{ units }}</div>
+    <div class="kpi__note">Counted from verified records only</div>
+  </div>
+  <div class="kpi kpi--brand">
+    <div class="kpi__label"><i class="bi bi-broadcast" aria-hidden="true"></i> Compatible requests</div>
+    <div class="kpi__value">{{ open_request_count }}</div>
+    <div class="kpi__note">{{ emergency_count }} flagged emergency</div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card-ll mb-4">
+      <div class="card-ll__head">
+        <h2 class="card-ll__title">Requests your {{ donor.blood_group }} can help with</h2>
+        <a class="tiny link-ll" href="{% url 'blood:request_list' %}">See all</a>
+      </div>
+      {% if matches %}
+        <div class="card-ll__body d-grid gap-2">
+          {% for match in matches %}
+            <div class="card-ll p-3" style="box-shadow:none">
+              <div class="d-flex justify-content-between gap-2 align-items-start flex-wrap">
+                <div class="d-flex gap-3 align-items-start">
+                  <span class="bg-plate {% if match.request.is_emergency %}bg-plate--emergency{% endif %}">{{ match.request.blood_group }}</span>
+                  <div>
+                    <p class="mb-1 fw-semibold">
+                      <a class="link-quiet" href="{{ match.request.get_absolute_url }}">{{ match.request.patient_name }} · {{ match.request.hospital_name }}</a>
+                    </p>
+                    <p class="tiny muted mb-1">
+                      <span class="num">{{ match.request.reference }}</span> ·
+                      {{ match.request.city }} · {{ match.request.units_required }} unit{{ match.request.units_required|pluralize }} ·
+                      {{ match.request.needed_label }}
+                    </p>
+                    <ul class="reasons">
+                      {% for reason in match.reasons %}
+                        <li><i class="bi bi-check2" aria-hidden="true"></i><span>{{ reason }}</span></li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-2">
+                  <span class="chip {{ match.request.urgency_chip_class }}">{{ match.request.get_urgency_display }}</span>
+                  <a class="btn-ll btn-ll--primary btn-ll--sm" href="{{ match.request.get_absolute_url }}">Open request</a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card-ll__body">
+          <p class="tiny muted mb-0">
+            No compatible request is open right now. You will be notified when one appears.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card-ll mb-4">
+      <div class="card-ll__head">
+        <h2 class="card-ll__title">Your recent responses</h2>
+        <a class="tiny link-ll" href="{% url 'console:my_responses' %}">All responses</a>
+      </div>
+      {% if responses %}
+        <div class="table-wrap" style="border:0;border-radius:0">
+          <table class="table-ruled">
+            <thead><tr><th>Request</th><th>Patient</th><th>Status</th><th>Sent</th><th></th></tr></thead>
+            <tbody>
+              {% for response in responses %}
+                <tr>
+                  <td><span class="num tiny">{{ response.request.reference }}</span></td>
+                  <td>{{ response.request.patient_name }}<span class="d-block tiny muted">{{ response.request.hospital_name }}</span></td>
+                  <td><span class="chip {{ response.status_chip_class }}">{{ response.get_status_display }}</span></td>
+                  <td class="tiny muted">{{ response.created_at|date:"d M" }}</td>
+                  <td class="text-end"><a class="btn-ll btn-ll--ghost btn-ll--sm" href="{{ response.request.get_absolute_url }}">Open</a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="card-ll__body">
+          <p class="tiny muted mb-0">You have not responded to a request yet.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card-ll">
+      <div class="card-ll__head">
+        <h2 class="card-ll__title">Donation history</h2>
+        <a class="tiny link-ll" href="{% url 'console:my_donations' %}">Full history</a>
+      </div>
+      <div class="card-ll__body">
+        {% if verified_donations or pending_donations %}
+          <ul class="timeline">
+            {% for donation in verified_donations|slice:":3" %}
+              <li class="timeline__item is-done">
+                <span class="timeline__dot" aria-hidden="true"></span>
+                <p class="timeline__title">{{ donation.donation_date|date:"d M Y" }} · {{ donation.hospital }}</p>
+                <p class="timeline__meta">
+                  {{ donation.units }} unit{{ donation.units|pluralize }} · {{ donation.reference }}
+                  {% if donation.issued_certificate %}
+                    · <a class="link-ll" href="{% url 'donations:certificate_download' donation.issued_certificate.reference %}">certificate</a>
+                  {% endif %}
+                </p>
+              </li>
+            {% endfor %}
+            {% for donation in pending_donations %}
+              <li class="timeline__item is-current">
+                <span class="timeline__dot" aria-hidden="true"></span>
+                <p class="timeline__title">{{ donation.donation_date|date:"d M Y" }} · {{ donation.hospital }}</p>
+                <p class="timeline__meta">Awaiting administrator verification · {{ donation.reference }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="tiny muted mb-0">
+            No donation is recorded yet. Donations recorded at a camp or through a completed request
+            appear here and need administrator verification.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card-ll mb-3">
+      <div class="card-ll__head"><h2 class="card-ll__title">Eligibility</h2></div>
+      <div class="card-ll__body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="tiny muted">Last donation</span>
+          <span class="num">{{ donor.last_donation_date|date:"d M Y"|default:"—" }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="tiny muted">Age on record</span>
+          <span class="num">{{ donor.age|default:"—" }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="tiny muted">Weight on record</span>
+          <span class="num">{{ donor.weight_kg|default:"—" }} kg</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="tiny muted">Profile review</span>
+          {% if donor.is_verified %}<span class="chip chip--ok">Verified</span>{% else %}<span class="chip chip--urgent">Pending</span>{% endif %}
+        </div>
+        {% if not donor.is_eligible %}
+          <div class="notice">
+            <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+            <span>
+              {{ donor.days_until_eligible }} day{{ donor.days_until_eligible|pluralize }} left in the
+              90-day gap. You can browse requests but not respond until then.
+            </span>
+          </div>
+        {% elif not donor.meets_age_criteria or not donor.meets_weight_criteria %}
+          <div class="notice">
+            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+            <span>Add your date of birth and weight so eligibility can be checked properly.</span>
+          </div>
+        {% endif %}
+        <a class="btn-ll btn-ll--ghost btn-ll--sm w-100 mt-3" href="{% url 'accounts:profile' %}">Edit donor profile</a>
+      </div>
+    </div>
+
+    <div class="card-ll mb-3">
+      <div class="card-ll__head">
+        <h2 class="card-ll__title">Upcoming camps</h2>
+        <a class="tiny link-ll" href="{% url 'camps:camp_list' %}">All</a>
+      </div>
+      <div class="card-ll__body">
+        {% if registrations %}
+          {% for registration in registrations %}
+            <div class="d-flex justify-content-between align-items-center gap-2 {% if not forloop.last %}mb-3 pb-3 border-bottom{% endif %}">
+              <div>
+                <p class="mb-0 fw-semibold" style="font-size:.9rem">{{ registration.camp.title }}</p>
+                <p class="tiny muted mb-0">{{ registration.camp.starts_at|date:"d M Y, g:i A" }} · {{ registration.camp.city }}</p>
+              </div>
+              <a class="btn-ll btn-ll--quiet btn-ll--sm" href="{{ registration.ticket_url }}">Ticket</a>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="tiny muted mb-2">No camp registration yet.</p>
+          <a class="btn-ll btn-ll--ghost btn-ll--sm w-100" href="{% url 'camps:camp_list' %}">Find a camp</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-ll mb-3">
+      <div class="card-ll__head">
+        <h2 class="card-ll__title">Achievements</h2>
+        <a class="tiny link-ll" href="{% url 'console:achievements' %}">All</a>
+      </div>
+      <div class="card-ll__body">
+        {% if awarded %}
+          <div class="d-grid gap-2">
+            {% for row in awarded|slice:":3" %}
+              <div class="d-flex align-items-center gap-2">
+                <span class="achievement__icon" style="width:34px;height:34px;font-size:.95rem" aria-hidden="true">
+                  <i class="bi {{ row.achievement.icon }}"></i>
+                </span>
+                <div>
+                  <p class="mb-0 fw-semibold" style="font-size:.88rem">{{ row.achievement.name }}</p>
+                  <p class="tiny muted mb-0">Awarded {{ row.awarded.awarded_at|date:"d M Y" }}</p>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="tiny muted mb-0">Your first achievement unlocks with your first verified donation.</p>
+        {% endif %}
+
+        {% if next_achievements %}
+          <hr class="rule my-3">
+          <p class="meta mb-2">Next up</p>
+          {% for row in next_achievements %}
+            <div class="mb-2">
+              <div class="d-flex justify-content-between tiny">
+                <span>{{ row.achievement.name }}</span>
+                <span class="num">{{ row.value }}/{{ row.target }}</span>
+              </div>
+              <div class="meter mt-1"><span class="meter__fill" data-meter="{{ row.percent }}"></span></div>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="notice notice--info">
+      <i class="bi bi-shield-lock" aria-hidden="true"></i>
+      <span>
+        Your phone number stays hidden from public pages. It is shared only with the recipient of a
+        request you respond to.
+      </span>
+    </div>
+  </div>
+</div>
+{% endblock %}

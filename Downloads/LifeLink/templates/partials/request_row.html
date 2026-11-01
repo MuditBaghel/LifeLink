@@ -1,0 +1,17 @@
+<a class="ledger__row" href="{{ item.get_absolute_url }}">
+  <span class="bg-plate {% if item.is_emergency %}bg-plate--emergency{% endif %}" aria-label="Blood group {{ item.blood_group }}">{{ item.blood_group }}</span>
+  <span style="min-width:0">
+    <span class="ledger__title d-block">{{ item.patient_name }} · {{ item.hospital_name }}</span>
+    <span class="ledger__sub d-block">
+      <span class="num">{{ item.reference }}</span> · {{ item.city }} ·
+      {{ item.units_required }} unit{{ item.units_required|pluralize }} needed
+    </span>
+  </span>
+  <span class="ledger__cell ledger__cell--hide">
+    <span class="chip {{ item.urgency_chip_class }}">{{ item.get_urgency_display }}</span>
+  </span>
+  <span class="ledger__cell ledger__cell--hide">{{ item.needed_label }}</span>
+  <span class="ledger__right">
+    <span class="chip {{ item.status_chip_class }}">{{ item.get_status_display }}</span>
+  </span>
+</a>

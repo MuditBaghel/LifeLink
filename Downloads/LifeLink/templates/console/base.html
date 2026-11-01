@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="pt-3 pb-5">
+  <div class="shell">
+    {% include "partials/messages.html" %}
+
+    <div class="app-shell">
+      <aside class="app-nav" aria-label="Dashboard navigation">
+        {% if user.is_platform_admin or user.is_staff %}
+          <div class="app-nav__group">
+            <p class="app-nav__label">Console</p>
+            <a class="app-nav__link {% if request.path == '/dashboard/admin/' %}is-active{% endif %}" href="{% url 'console:admin_dashboard' %}">
+              <i class="bi bi-speedometer2" aria-hidden="true"></i> Overview
+            </a>
+            <a class="app-nav__link {% if '/dashboard/admin/users/' in request.path %}is-active{% endif %}" href="{% url 'console:admin_users' %}">
+              <i class="bi bi-people" aria-hidden="true"></i> Users
+            </a>
+            <a class="app-nav__link {% if '/dashboard/admin/requests/' in request.path %}is-active{% endif %}" href="{% url 'console:admin_requests' %}">
+              <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i> Requests
+            </a>
+            <a class="app-nav__link {% if '/dashboard/admin/donations/' in request.path %}is-active{% endif %}" href="{% url 'console:admin_donations' %}">
+              <i class="bi bi-patch-check" aria-hidden="true"></i> Verification
+            </a>
+            <a class="app-nav__link {% if '/dashboard/admin/camps/' in request.path %}is-active{% endif %}" href="{% url 'console:admin_camps' %}">
+              <i class="bi bi-calendar2-event" aria-hidden="true"></i> Camps
+            </a>
+            <a class="app-nav__link {% if '/dashboard/admin/volunteers/' in request.path %}is-active{% endif %}" href="{% url 'console:admin_volunteers' %}">
+              <i class="bi bi-person-badge" aria-hidden="true"></i> Volunteers
+            </a>
+            <a class="app-nav__link {% if '/dashboard/admin/feedback/' in request.path %}is-active{% endif %}" href="{% url 'console:admin_feedback' %}">
+              <i class="bi bi-chat-square-text" aria-hidden="true"></i> Feedback
+            </a>
+            <a class="app-nav__link {% if '/dashboard/admin/announcements/' in request.path %}is-active{% endif %}" href="{% url 'console:announcements' %}">
+              <i class="bi bi-megaphone" aria-hidden="true"></i> Announcements
+            </a>
+            <a class="app-nav__link {% if '/dashboard/admin/analytics/' in request.path %}is-active{% endif %}" href="{% url 'console:analytics' %}">
+              <i class="bi bi-graph-up" aria-hidden="true"></i> Analytics
+            </a>
+            <a class="app-nav__link {% if '/camps/checkin/' in request.path %}is-active{% endif %}" href="{% url 'camps:checkin' %}">
+              <i class="bi bi-qr-code-scan" aria-hidden="true"></i> Check-in desk
+            </a>
+          </div>
+        {% elif user.is_recipient %}
+          <div class="app-nav__group">
+            <p class="app-nav__label">Recipient</p>
+            <a class="app-nav__link {% if request.path == '/dashboard/recipient/' %}is-active{% endif %}" href="{% url 'console:recipient_dashboard' %}">
+              <i class="bi bi-speedometer2" aria-hidden="true"></i> Overview
+            </a>
+            <a class="app-nav__link {% if request.path == '/dashboard/requests/' %}is-active{% endif %}" href="{% url 'console:my_requests' %}">
+              <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i> My requests
+            </a>
+            <a class="app-nav__link" href="{% url 'blood:request_create' %}">
+              <i class="bi bi-plus-circle" aria-hidden="true"></i> New request
+            </a>
+            <a class="app-nav__link" href="{% url 'blood:sos_create' %}">
+              <i class="bi bi-exclamation-octagon" aria-hidden="true"></i> Emergency request
+            </a>
+            <a class="app-nav__link" href="{% url 'accounts:donor_directory' %}">
+              <i class="bi bi-person-lines-fill" aria-hidden="true"></i> Find donors
+            </a>
+            <a class="app-nav__link" href="{% url 'camps:camp_list' %}">
+              <i class="bi bi-calendar2-event" aria-hidden="true"></i> Camps
+            </a>
+          </div>
+        {% else %}
+          <div class="app-nav__group">
+            <p class="app-nav__label">Donor</p>
+            <a class="app-nav__link {% if request.path == '/dashboard/donor/' %}is-active{% endif %}" href="{% url 'console:donor_dashboard' %}">
+              <i class="bi bi-speedometer2" aria-hidden="true"></i> Overview
+            </a>
+            <a class="app-nav__link" href="{% url 'blood:request_list' %}">
+              <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i> Blood requests
+            </a>
+            <a class="app-nav__link {% if '/dashboard/responses/' in request.path %}is-active{% endif %}" href="{% url 'console:my_responses' %}">
+              <i class="bi bi-person-check" aria-hidden="true"></i> My responses
+            </a>
+            <a class="app-nav__link {% if '/dashboard/requests/' in request.path %}is-active{% endif %}" href="{% url 'console:my_requests' %}">
+              <i class="bi bi-journal-text" aria-hidden="true"></i> Requests I raised
+            </a>
+            <a class="app-nav__link {% if '/dashboard/donations/' in request.path %}is-active{% endif %}" href="{% url 'console:my_donations' %}">
+              <i class="bi bi-droplet-half" aria-hidden="true"></i> Donation history
+            </a>
+            <a class="app-nav__link {% if '/dashboard/certificates/' in request.path %}is-active{% endif %}" href="{% url 'console:certificates' %}">
+              <i class="bi bi-patch-check" aria-hidden="true"></i> Certificates
+            </a>
+            <a class="app-nav__link {% if '/dashboard/achievements/' in request.path %}is-active{% endif %}" href="{% url 'console:achievements' %}">
+              <i class="bi bi-award" aria-hidden="true"></i> Achievements
+            </a>
+            <a class="app-nav__link {% if '/dashboard/volunteering/' in request.path %}is-active{% endif %}" href="{% url 'console:volunteering' %}">
+              <i class="bi bi-person-badge" aria-hidden="true"></i> Volunteering
+            </a>
+          </div>
+        {% endif %}
+
+        <div class="app-nav__group">
+          <p class="app-nav__label">Account</p>
+          <a class="app-nav__link" href="{% url 'accounts:profile' %}">
+            <i class="bi bi-person-gear" aria-hidden="true"></i> My profile
+          </a>
+          <a class="app-nav__link {% if '/notifications/' in request.path %}is-active{% endif %}" href="{% url 'notifications:list' %}">
+            <i class="bi bi-bell" aria-hidden="true"></i> Notifications
+            {% if nav_unread_count %}<span class="count">{{ nav_unread_count }}</span>{% endif %}
+          </a>
+          <a class="app-nav__link" href="{% url 'core:home' %}">
+            <i class="bi bi-house" aria-hidden="true"></i> Public site
+          </a>
+        </div>
+      </aside>
+
+      <div class="app-main">
+        {% block dashboard %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

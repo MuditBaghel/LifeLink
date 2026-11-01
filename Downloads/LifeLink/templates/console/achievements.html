@@ -1,0 +1,75 @@
+{% extends "console/base.html" %}
+
+{% block title %}Achievements · LifeLink{% endblock %}
+
+{% block dashboard %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Achievements</h1>
+    <p class="page-sub">
+      {{ awarded|length }} of {{ board|length }} unlocked. Progress counts verified activities only.
+    </p>
+  </div>
+  <a class="btn-ll btn-ll--ghost btn-ll--sm" href="{% url 'console:volunteering' %}">Volunteering</a>
+</div>
+
+<div class="card-ll mb-4">
+  <div class="card-ll__head"><h2 class="card-ll__title">Unlocked</h2></div>
+  <div class="card-ll__body">
+    {% if awarded %}
+      <div class="row g-3">
+        {% for row in awarded %}
+          <div class="col-md-6">
+            <div class="achievement is-earned">
+              <div class="achievement__icon" aria-hidden="true"><i class="bi {{ row.achievement.icon }}"></i></div>
+              <div>
+                <p class="achievement__name">{{ row.achievement.name }}</p>
+                <p class="achievement__desc mb-1">{{ row.achievement.description }}</p>
+                <span class="chip chip--ok">Awarded {{ row.awarded.awarded_at|date:"d M Y" }}</span>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="tiny muted mb-0">
+        No achievement unlocked yet. First Donation unlocks after one verified donation.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card-ll mb-4">
+  <div class="card-ll__head"><h2 class="card-ll__title">In progress</h2></div>
+  <div class="card-ll__body">
+    <div class="row g-3">
+      {% for row in in_progress %}
+        <div class="col-md-6">
+          <div class="achievement is-locked">
+            <div class="achievement__icon" aria-hidden="true"><i class="bi {{ row.achievement.icon }}"></i></div>
+            <div class="flex-grow-1">
+              <p class="achievement__name">{{ row.achievement.name }}</p>
+              <p class="achievement__desc">{{ row.achievement.description }}</p>
+              <div class="d-flex justify-content-between tiny muted mb-1">
+                <span>{{ row.achievement.get_criteria_display }}</span>
+                <span class="num">{{ row.value }} / {{ row.target }}</span>
+              </div>
+              <div class="meter"><span class="meter__fill" data-meter="{{ row.percent }}"></span></div>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <p class="tiny muted mb-0">Every achievement on the platform is unlocked.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="notice notice--info">
+  <i class="bi bi-shield-check" aria-hidden="true"></i>
+  <span>
+    Achievements are granted by the verification service, not by self-report. Donation achievements
+    count verified records only; camp and volunteer achievements count confirmed activities.
+  </span>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "console/base.html" %}
+
+{% block title %}My responses · LifeLink{% endblock %}
+
+{% block dashboard %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">My responses</h1>
+    <p class="page-sub">Every request you offered to help with, and where it stands.</p>
+  </div>
+  <a class="btn-ll btn-ll--ghost btn-ll--sm" href="{% url 'blood:request_list' %}">Find requests</a>
+</div>
+
+<div class="segmented mb-3">
+  <a href="?status=" class="{% if not status %}is-active{% endif %}">All</a>
+  {% for code, label in statuses %}
+    <a href="?status={{ code }}" class="{% if status == code %}is-active{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if page.object_list %}
+  <div class="table-wrap">
+    <table class="table-ruled">
+      <thead><tr><th>Request</th><th>Patient / hospital</th><th>Sent on</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for response in page.object_list %}
+          <tr>
+            <td><span class="num tiny">{{ response.request.reference }}</span><span class="d-block num fw-semibold">{{ response.request.blood_group }}</span></td>
+            <td>{{ response.request.patient_name }}<span class="d-block tiny muted">{{ response.request.hospital_name }}, {{ response.request.city }}</span></td>
+            <td class="tiny">{{ response.created_at|date:"d M Y" }}</td>
+            <td><span class="chip {{ response.status_chip_class }}">{{ response.get_status_display }}</span></td>
+            <td class="text-end"><a class="btn-ll btn-ll--ghost btn-ll--sm" href="{{ response.request.get_absolute_url }}">Open</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+{% else %}
+  {% url 'blood:request_list' as requests_url %}
+  {% include "partials/empty.html" with icon="bi-person-check" title="No response yet" body="Responses appear when you offer to donate against a compatible request." action_url=requests_url action_label="Browse requests" %}
+{% endif %}
+{% endblock %}

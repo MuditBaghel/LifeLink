@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}{{ donor.user.display_name }} · Donor card · LifeLink{% endblock %}
+
+{% block content %}
+<section class="section--top-tight">
+  <div class="shell">
+    <a class="link-quiet tiny d-inline-flex align-items-center gap-1 mb-3" href="{% url 'accounts:donor_directory' %}">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to donor search
+    </a>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="card-ll card-ll--raised">
+          <div class="card-ll__body">
+            <div class="donor-hero">
+              <span class="avatar-disc avatar-disc--lg avatar-disc--brand" aria-hidden="true">
+                {% if donor.user.avatar_url %}
+                  <img src="{{ donor.user.avatar_url }}" alt="" width="76" height="76" loading="lazy">
+                {% else %}{{ donor.user.initials }}{% endif %}
+              </span>
+              <div class="flex-grow-1">
+                <h1 class="h2 mb-1">{{ donor.user.display_name }}</h1>
+                <p class="muted mb-2" style="font-size:.92rem">
+                  {{ donor.city }}{% if donor.area %} · {{ donor.area }}{% endif %}
+                  · Member since {{ donor.user.date_joined|date:"M Y" }}
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                  {% if donor.is_verified %}
+                    <span class="chip chip--ok"><i class="bi bi-patch-check-fill" aria-hidden="true"></i>Profile verified</span>
+                  {% else %}
+                    <span class="chip chip--muted">Profile not yet reviewed</span>
+                  {% endif %}
+                  {% if donor.is_available %}
+                    <span class="chip chip--info">Available for contact</span>
+                  {% else %}
+                    <span class="chip chip--muted">Currently unavailable</span>
+                  {% endif %}
+                  {% if donor.is_eligible %}
+                    <span class="chip chip--ok">Eligible to donate now</span>
+                  {% else %}
+                    <span class="chip chip--urgent">Eligible in {{ donor.days_until_eligible }} days</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="text-center">
+                <div class="bg-plate bg-plate--lg">{{ donor.blood_group }}</div>
+                <p class="meta mt-2 mb-0">Blood group</p>
+              </div>
+            </div>
+
+            {% if donor.bio %}
+              <hr class="rule my-4">
+              <p class="tiny muted mb-0">{{ donor.bio }}</p>
+            {% endif %}
+          </div>
+
+          <div class="card-ll__foot">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <p class="meta mb-1">Verified donations</p>
+                <p class="num fw-semibold mb-0">{{ donor.verified_donation_count }}</p>
+              </div>
+              <div class="col-sm-4">
+                <p class="meta mb-1">Units contributed</p>
+                <p class="num fw-semibold mb-0">{{ donor.verified_units }}</p>
+              </div>
+              <div class="col-sm-4">
+                <p class="meta mb-1">Contact</p>
+                {% if contact_visible %}
+                  <p class="mono mb-0">{{ donor.user.phone }}</p>
+                {% else %}
+                  <p class="tiny muted mb-0">Hidden by default</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-ll mt-4">
+          <div class="card-ll__head">
+            <h2 class="card-ll__title">Verified donation history</h2>
+            <span class="chip chip--muted">Verified only</span>
+          </div>
+          {% if recent_donations %}
+            <div class="table-wrap" style="border:0;border-radius:0">
+              <table class="table-ruled">
+                <thead>
+                  <tr><th>Date</th><th>Hospital / camp</th><th>Units</th><th>Reference</th><th>Certificate</th></tr>
+                </thead>
+                <tbody>
+                  {% for donation in recent_donations %}
+                    <tr>
+                      <td>{{ donation.donation_date|date:"d M Y" }}</td>
+                      <td>{{ donation.hospital }}{% if donation.camp %}<span class="d-block tiny muted">{{ donation.camp.title }}</span>{% endif %}</td>
+                      <td class="num">{{ donation.units }}</td>
+                      <td class="num tiny">{{ donation.reference }}</td>
+                      <td>
+                        {% if donation.issued_certificate %}
+                          <span class="chip chip--ok">Issued</span>
+                        {% else %}
+                          <span class="chip chip--muted">—</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="card-ll__body">
+              <p class="tiny muted mb-0">No verified donation is recorded for this donor yet.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card-ll mb-3">
+          <div class="card-ll__head"><h2 class="card-ll__title">Who this donor can help</h2></div>
+          <div class="card-ll__body">
+            <p class="tiny muted">Red cells from a {{ donor.blood_group }} donor are compatible with these patient groups.</p>
+            <div class="d-flex flex-wrap gap-2">
+              {% for group in compatible_groups %}
+                <span class="bg-plate bg-plate--sm {% if group == donor.blood_group %}bg-plate--emergency{% endif %}">{{ group }}</span>
+              {% endfor %}
+            </div>
+            <hr class="rule my-3">
+            <p class="tiny muted mb-0">
+              This is preliminary compatibility guidance for red blood cells. Medical assessment and
+              crossmatching at the hospital decide whether a transfusion can take place.
+            </p>
+          </div>
+        </div>
+
+        {% if achievements %}
+          <div class="card-ll mb-3">
+            <div class="card-ll__head"><h2 class="card-ll__title">Achievements</h2></div>
+            <div class="card-ll__body d-grid gap-2">
+              {% for award in achievements %}
+                <div class="d-flex align-items-center gap-2">
+                  <span class="achievement__icon" style="width:32px;height:32px;font-size:.9rem" aria-hidden="true">
+                    <i class="bi {{ award.achievement.icon }}"></i>
+                  </span>
+                  <div>
+                    <p class="mb-0 fw-semibold" style="font-size:.88rem">{{ award.achievement.name }}</p>
+                    <p class="tiny muted mb-0">{{ award.awarded_at|date:"M Y" }}</p>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="card-ll">
+          <div class="card-ll__body">
+            {% if own_card %}
+              <p class="fw-semibold mb-2">This is your public card</p>
+              <p class="tiny muted">Only the fields you chose to share are visible to other users.</p>
+              <a class="btn-ll btn-ll--ghost btn-ll--sm w-100" href="{% url 'accounts:profile' %}">Edit my profile</a>
+            {% else %}
+              <p class="fw-semibold mb-2">Need this donor's help?</p>
+              <p class="tiny muted">
+                Donor contact details are shared through a request response. Raise a request for the
+                patient and this donor will see it if the blood group is compatible.
+              </p>
+              <a class="btn-ll btn-ll--primary btn-ll--sm w-100" href="{% url 'blood:request_create' %}">Raise a blood request</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

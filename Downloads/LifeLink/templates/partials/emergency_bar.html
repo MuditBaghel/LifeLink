@@ -1,0 +1,13 @@
+{% if nav_emergency_count %}
+<div class="emergency-bar" role="status">
+  <div class="shell emergency-bar__inner">
+    <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>
+    <span>
+      <span class="pill-count">{{ nav_emergency_count }}</span>
+      emergency request{{ nav_emergency_count|pluralize }} open now
+    </span>
+    <a href="{% url 'blood:request_list' %}?urgency=emergency">Emergency queue</a>
+    <a class="ms-auto" href="{% url 'blood:sos_create' %}">Raise an emergency request</a>
+  </div>
+</div>
+{% endif %}

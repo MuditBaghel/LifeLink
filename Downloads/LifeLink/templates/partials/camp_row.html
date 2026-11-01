@@ -1,0 +1,26 @@
+<div class="camp-row">
+  <div class="camp-row__date" aria-hidden="true">
+    <div class="camp-row__day">{{ camp.day_label }}</div>
+    <div class="camp-row__month">{{ camp.month_label }}</div>
+  </div>
+  {% if camp.image_url %}
+    <img class="camp-row__thumb" src="{{ camp.image_url }}" alt="{{ camp.image_alt|default:camp.title }}" width="128" height="82" loading="lazy">
+  {% else %}
+    <div class="camp-row__thumb camp-row__thumb--empty" aria-hidden="true"><i class="bi bi-calendar2-event"></i></div>
+  {% endif %}
+  <div style="min-width:0">
+    <p class="camp-row__title"><a class="link-quiet" href="{{ camp.get_absolute_url }}">{{ camp.title }}</a></p>
+    <p class="camp-row__meta">{{ camp.starts_at|date:"D, d M Y · g:i A" }} · {{ camp.venue }}, {{ camp.city }}</p>
+    <p class="camp-row__meta">{{ camp.slots_taken }} of {{ camp.capacity }} slots taken · {{ camp.organizer }}</p>
+  </div>
+  <div class="camp-row__action">
+    <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+      <span class="chip {{ camp.registration_chip_class }}">{{ camp.registration_state }}</span>
+      <span class="tiny muted">{{ camp.slots_available }} left</span>
+    </div>
+    <div class="meter" role="img" aria-label="{{ camp.fill_percent }} percent of slots taken">
+      <span class="meter__fill" data-meter="{{ camp.fill_percent }}"></span>
+    </div>
+    <a class="btn-ll btn-ll--ghost btn-ll--sm mt-2 w-100" href="{{ camp.get_absolute_url }}">Camp details</a>
+  </div>
+</div>
