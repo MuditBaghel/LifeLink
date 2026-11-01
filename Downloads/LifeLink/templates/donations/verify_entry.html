@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Verify a donation certificate · LifeLink{% endblock %}
+
+{% block content %}
+<section class="section--top-tight">
+  <div class="shell shell--narrow">
+    <p class="meta mb-2">Certificate verification</p>
+    <h1 class="h2 mb-2">Check a LifeLink certificate</h1>
+    <p class="lead mb-4" style="font-size:1rem">
+      Every certificate carries a reference like <span class="num">LL-2026-C1F3A9</span> in the
+      footer. Enter it here to confirm the donation was recorded and verified.
+    </p>
+
+    {% include "partials/messages.html" %}
+
+    <div class="form-panel">
+      <form method="get" novalidate>
+        {% include "partials/field.html" with field=form.reference %}
+        <button class="btn-ll btn-ll--primary" type="submit">
+          <i class="bi bi-search" aria-hidden="true"></i> Check certificate
+        </button>
+      </form>
+      <p class="tiny muted mt-3 mb-0">
+        Verification shows the donor name, donation date, units and issuing date. It never reveals
+        contact details.
+      </p>
+    </div>
+
+    <div class="card-ll mt-3">
+      <div class="card-ll__body">
+        <h2 class="h4 mb-2">Why certificates have a reference</h2>
+        <p class="tiny muted mb-0">
+          A certificate is generated only from a donation record an administrator has verified. The
+          reference lets a hospital, employer or college confirm the record without asking the donor
+          for anything else.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

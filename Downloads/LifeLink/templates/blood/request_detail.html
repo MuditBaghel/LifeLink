@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}{{ blood_request.reference }} · {{ blood_request.blood_group }} needed at {{ blood_request.hospital_name }}{% endblock %}
+
+{% block content %}
+<section class="section--top-tight">
+  <div class="shell">
+    <a class="link-quiet tiny d-inline-flex align-items-center gap-1 mb-3" href="{% url 'blood:request_list' %}">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> All blood requests
+    </a>
+
+    {% include "partials/messages.html" %}
+
+    <div class="card-ll card-ll--raised mb-4">
+      <div class="card-ll__body">
+        <div class="d-flex flex-wrap align-items-start gap-4 justify-content-between">
+          <div class="d-flex gap-3 align-items-start">
+            <div class="bg-plate bg-plate--lg {% if blood_request.is_emergency %}bg-plate--emergency{% endif %}">
+              {{ blood_request.blood_group }}
+            </div>
+            <div>
+              <div class="d-flex flex-wrap gap-2 mb-2">
+                <span class="chip {{ blood_request.urgency_chip_class }}">
+                  {% if blood_request.is_emergency %}<i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>{% endif %}
+                  {{ blood_request.get_urgency_display }} priority
+                </span>
+                <span class="chip {{ blood_request.status_chip_class }}">{{ blood_request.get_status_display }}</span>
+                {% if blood_request.is_overdue %}<span class="chip chip--emergency">Past the needed date</span>{% endif %}
+              </div>
+              <h1 class="page-title mb-1">{{ blood_request.patient_name }} needs {{ blood_request.blood_group }}</h1>
+              <p class="page-sub mb-0">
+                {{ blood_request.hospital_name }} · {{ blood_request.city }} ·
+                needed {{ blood_request.required_by|date:"d M Y" }} ({{ blood_request.needed_label }})
+              </p>
+            </div>
+          </div>
+
+          <div class="text-lg-end">
+            <p class="meta mb-1">Request reference</p>
+            <div class="copy-strip">
+              <span class="num">{{ blood_request.reference }}</span>
+              <button type="button" class="btn-ll btn-ll--quiet btn-ll--sm" data-copy="{{ blood_request.reference }}">Copy</button>
+            </div>
+            <p class="tiny muted mt-2 mb-0">Raised {{ blood_request.created_at|date:"d M Y, g:i A" }}</p>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="d-flex justify-content-between tiny muted mb-1">
+            <span>Units filled: <strong class="num">{{ blood_request.units_fulfilled }}</strong> of <strong class="num">{{ blood_request.units_required }}</strong></span>
+            <span>{{ blood_request.progress_percent }}% through the lifecycle</span>
+          </div>
+          <div class="progress-ll" role="img" aria-label="{{ blood_request.progress_percent }} percent of the request lifecycle complete">
+            <span class="progress-ll__fill {% if blood_request.is_emergency %}progress-ll__fill--brand{% endif %}" data-meter="{{ blood_request.progress_percent }}"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="card-ll mb-4">
+          <div class="card-ll__head"><h2 class="card-ll__title">Request details</h2></div>
+          <div class="card-ll__body">
+            <div class="row g-4">
+              <div class="col-sm-6">
+                <p class="meta mb-1">Patient</p>
+                <p class="mb-0 fw-semibold">{{ blood_request.patient_name }}{% if blood_request.patient_age %} · {{ blood_request.patient_age }} years{% endif %}</p>
+              </div>
+              <div class="col-sm-6">
+                <p class="meta mb-1">Blood group needed</p>
+                <p class="mb-0"><span class="bg-plate bg-plate--sm">{{ blood_request.blood_group }}</span></p>
+              </div>
+              <div class="col-sm-6">
+                <p class="meta mb-1">Hospital</p>
+                <p class="mb-0 fw-semibold">{{ blood_request.hospital_name }}</p>
+                <p class="tiny muted mb-0">{{ blood_request.hospital_address }}</p>
+              </div>
+              <div class="col-sm-6">
+                <p class="meta mb-1">Location</p>
+                <p class="mb-0">{{ blood_request.city }}{% if blood_request.pincode %} · {{ blood_request.pincode }}{% endif %}</p>
+              </div>
+              <div class="col-sm-6">
+                <p class="meta mb-1">Contact for coordination</p>
+                {% if contact_visible %}
+                  <p class="mb-0 num">{{ blood_request.contact_phone }}</p>
+                {% else %}
+                  <p class="mb-0 tiny muted">Hidden. Shared with the requester and with donors who respond.</p>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <p class="meta mb-1">Posted by</p>
+                <p class="mb-0">
+                  {% if can_manage %}
+                    {{ blood_request.requester.display_name }}
+                  {% else %}
+                    {{ blood_request.requester.first_name }} {{ blood_request.requester.last_name|slice:":1" }}.
+                  {% endif %}
+                  {% if blood_request.requester.recipient_profile.is_verified %}
+                    <span class="chip chip--ok ms-1">Verified recipient</span>
+                  {% endif %}
+                </p>
+              </div>
+              {% if blood_request.notes %}
+                <div class="col-12">
+                  <p class="meta mb-1">Additional information</p>
+                  <p class="mb-0">{{ blood_request.notes }}</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-ll mb-4">
+          <div class="card-ll__head">
+            <h2 class="card-ll__title">Request progress</h2>
+            <span class="tiny muted">{{ blood_request.get_status_display }}</span>
+          </div>
+          <div class="card-ll__body">
+            <ul class="timeline">
+              {% for step in blood_request.lifecycle %}
+                <li class="timeline__item is-{{ step.state }}">
+                  <span class="timeline__dot" aria-hidden="true"></span>
+                  <p class="timeline__title">{{ step.label }}</p>
+                  <p class="timeline__meta">
+                    {% if step.state == 'done' %}Completed{% elif step.state == 'current' %}Current stage{% elif step.state == 'cancelled' %}Not reached{% else %}Pending{% endif %}
+                  </p>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        {% if can_manage %}
+          <div class="card-ll mb-4">
+            <div class="card-ll__head">
+              <h2 class="card-ll__title">Donor responses</h2>
+              <span class="chip chip--muted">{{ responses|length }} total</span>
+            </div>
+            {% if responses %}
+              <div class="table-wrap" style="border:0;border-radius:0">
+                <table class="table-ruled">
+                  <thead>
+                    <tr><th>Donor</th><th>Group</th><th>Message</th><th>Status</th><th class="text-end">Action</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for response in responses %}
+                      <tr>
+                        <td>
+                          <span class="d-flex align-items-center gap-2">
+                            <span class="avatar-disc avatar-disc--sm">{{ response.donor.initials }}</span>
+                            <span>
+                              <span class="d-block fw-semibold">{{ response.donor.display_name }}</span>
+                              <span class="tiny muted">{{ response.donor.phone|default:"Phone on profile" }}</span>
+                            </span>
+                          </span>
+                        </td>
+                        <td><span class="num">{{ response.donor.donorprofile.blood_group }}</span></td>
+                        <td class="tiny">{{ response.message|default:"—" }}</td>
+                        <td><span class="chip {{ response.status_chip_class }}">{{ response.get_status_display }}</span></td>
+                        <td class="text-end">
+                          <div class="d-inline-flex gap-1 flex-wrap justify-content-end">
+                            {% if response.status == 'interested' %}
+                              <form method="post" action="{% url 'blood:response_action' response.pk %}">
+                                {% csrf_token %}<input type="hidden" name="action" value="confirmed">
+                                <button class="btn-ll btn-ll--primary btn-ll--sm" type="submit">Confirm</button>
+                              </form>
+                              <form method="post" action="{% url 'blood:response_action' response.pk %}">
+                                {% csrf_token %}<input type="hidden" name="action" value="declined">
+                                <button class="btn-ll btn-ll--quiet btn-ll--sm" type="submit">Decline</button>
+                              </form>
+                            {% elif response.status == 'confirmed' %}
+                              <form method="post" action="{% url 'blood:response_action' response.pk %}">
+                                {% csrf_token %}<input type="hidden" name="action" value="completed">
+                                <button class="btn-ll btn-ll--primary btn-ll--sm" type="submit">Mark donated</button>
+                              </form>
+                              <form method="post" action="{% url 'blood:response_action' response.pk %}">
+                                {% csrf_token %}<input type="hidden" name="action" value="declined">
+                                <button class="btn-ll btn-ll--quiet btn-ll--sm" type="submit">Decline</button>
+                              </form>
+                            {% else %}
+                              <span class="tiny muted">No action</span>
+                            {% endif %}
+                          </div>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="card-ll__body">
+                <p class="tiny muted mb-0">
+                  No donor has responded yet. {{ pool.contactable }} compatible donor{{ pool.contactable|pluralize }} can currently be contacted for this request.
+                </p>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <div class="card-ll">
+          <div class="card-ll__head"><h2 class="card-ll__title">Request activity</h2></div>
+          <div class="card-ll__body">
+            {% if events %}
+              <ul class="timeline">
+                {% for event in events %}
+                  <li class="timeline__item {% if forloop.last %}is-current{% else %}is-done{% endif %}">
+                    <span class="timeline__dot" aria-hidden="true"></span>
+                    <p class="timeline__title">{{ event.status_label }}</p>
+                    <p class="timeline__meta">
+                      {{ event.created_at|date:"d M Y, g:i A" }}
+                      {% if event.actor %} · by {{ event.actor.display_name }}{% else %} · by LifeLink{% endif %}
+                      {% if event.note %} · {{ event.note }}{% endif %}
+                    </p>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="tiny muted mb-0">No status change recorded yet.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card-ll mb-3">
+          <div class="card-ll__head"><h2 class="card-ll__title">Your action</h2></div>
+          <div class="card-ll__body">
+            {% if is_owner %}
+              <p class="tiny muted">
+                You raised this request. Donor responses appear on the left; confirming a donor moves
+                the request into coordination.
+              </p>
+              {% if blood_request.is_open %}
+                <a class="btn-ll btn-ll--ghost btn-ll--sm w-100 mb-2" href="{% url 'blood:request_update' blood_request.reference %}">Edit request</a>
+                <form method="post" action="{% url 'blood:request_cancel' blood_request.reference %}" data-confirm="Cancel this request? Donors who responded will be notified.">
+                  {% csrf_token %}
+                  <button class="btn-ll btn-ll--danger-quiet btn-ll--sm w-100" type="submit">Cancel request</button>
+                </form>
+              {% else %}
+                <span class="chip {{ blood_request.status_chip_class }}">{{ blood_request.get_status_display }}</span>
+              {% endif %}
+
+            {% elif my_response %}
+              <p class="meta mb-1">Your response</p>
+              <p class="mb-2"><span class="chip {{ my_response.status_chip_class }}">{{ my_response.get_status_display }}</span></p>
+              <p class="tiny muted">
+                The recipient can see your name and phone number now. Coordinate the hospital visit
+                directly, then the recipient marks the donation as completed.
+              </p>
+              {% if my_response.status == 'interested' %}
+                <form method="post" action="{% url 'blood:response_action' my_response.pk %}" class="mb-2">
+                  {% csrf_token %}<input type="hidden" name="action" value="confirmed">
+                  <button class="btn-ll btn-ll--primary btn-ll--sm w-100" type="submit">Confirm I can donate</button>
+                </form>
+              {% endif %}
+              {% if my_response.status == 'interested' or my_response.status == 'confirmed' or my_response.status == 'declined' %}
+                <form method="post" action="{% url 'blood:response_action' my_response.pk %}" data-confirm="Withdraw your response to this request?">
+                  {% csrf_token %}<input type="hidden" name="action" value="withdrawn">
+                  <button class="btn-ll btn-ll--danger-quiet btn-ll--sm w-100" type="submit">Withdraw response</button>
+                </form>
+              {% endif %}
+
+            {% elif can_respond %}
+              <p class="meta mb-2">Respond as a {{ request.user.donor_profile.blood_group }} donor</p>
+              <form method="post" action="{% url 'blood:respond' blood_request.reference %}">
+                {% csrf_token %}
+                {% include "partials/field.html" with field=response_form.message %}
+                <button class="btn-ll btn-ll--primary w-100" type="submit">I can donate</button>
+              </form>
+              <p class="tiny muted mt-2 mb-0">
+                Responding shares your name and phone number with the recipient for this request only.
+              </p>
+
+            {% elif not request.user.is_authenticated %}
+              <p class="tiny muted">Sign in as a donor to respond to this request.</p>
+              <a class="btn-ll btn-ll--primary btn-ll--sm w-100" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Sign in to respond</a>
+              <a class="btn-ll btn-ll--ghost btn-ll--sm w-100 mt-2" href="{% url 'accounts:register' %}">Create a donor account</a>
+
+            {% else %}
+              <p class="tiny muted mb-0">{{ respond_blocked_reason|default:"You cannot respond to this request from this account." }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if can_manage %}
+          <div class="card-ll mb-3">
+            <div class="card-ll__head">
+              <h2 class="card-ll__title">Compatible donor pool</h2>
+              <span class="chip chip--info">{{ pool.groups|length }} group{{ pool.groups|length|pluralize }}</span>
+            </div>
+            <div class="card-ll__body">
+              <div class="row g-2 text-center mb-3">
+                <div class="col-4">
+                  <div class="num fw-semibold">{{ pool.compatible }}</div>
+                  <div class="tiny muted">Compatible</div>
+                </div>
+                <div class="col-4">
+                  <div class="num fw-semibold">{{ pool.available }}</div>
+                  <div class="tiny muted">Available</div>
+                </div>
+                <div class="col-4">
+                  <div class="num fw-semibold">{{ pool.contactable }}</div>
+                  <div class="tiny muted">Contactable</div>
+                </div>
+              </div>
+              <div class="d-flex flex-wrap gap-1">
+                {% for group in pool.groups %}
+                  <span class="bg-plate bg-plate--sm {% if group == blood_request.blood_group %}bg-plate--emergency{% endif %}">{{ group }}</span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <div class="card-ll mb-3">
+            <div class="card-ll__head">
+              <h2 class="card-ll__title">Why these donors match</h2>
+              <span class="tiny muted">{{ matching|length }} shown</span>
+            </div>
+            <div class="card-ll__body d-grid gap-2">
+              {% for match in matching %}
+                <div class="donor-card" style="grid-template-columns:38px minmax(0,1fr)">
+                  <span class="avatar-disc avatar-disc--sm avatar-disc--brand">{{ match.donor.user.initials }}</span>
+                  <div style="min-width:0">
+                    <p class="donor-card__name">
+                      <a class="link-quiet" href="{% url 'accounts:donor_detail' match.donor.pk %}">{{ match.donor.user.display_name }}</a>
+                      <span class="chip {{ match.donor.is_verified|yesno:'chip--ok,chip--muted' }}">{{ match.donor.is_verified|yesno:"Verified,Unverified" }}</span>
+                    </p>
+                    <p class="donor-card__meta mb-0">
+                      <span class="num fw-semibold">{{ match.donor.blood_group }}</span>
+                      <span>{{ match.donor.city }}</span>
+                    </p>
+                    <ul class="reasons">
+                      {% for reason in match.reasons %}
+                        <li><i class="bi bi-check2" aria-hidden="true"></i><span>{{ reason }}</span></li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+              {% empty %}
+                <p class="tiny muted mb-0">
+                  No donor is available and eligible for {{ blood_request.blood_group }} right now.
+                  LifeLink will notify donors as soon as they become contactable.
+                </p>
+              {% endfor %}
+            </div>
+          </div>
+
+          {% if request.user.is_platform_admin or request.user.is_staff %}
+            <div class="card-ll mb-3">
+              <div class="card-ll__head"><h2 class="card-ll__title">Administrator status control</h2></div>
+              <div class="card-ll__body">
+                <form method="post" action="{% url 'console:admin_request_status' blood_request.pk %}">
+                  {% csrf_token %}
+                  <div class="field">
+                    <label class="form-label" for="adminStatus">Move to</label>
+                    <select class="form-select" id="adminStatus" name="status">
+                      {% for option in blood_request.allowed_transition_choices %}
+                        <option value="{{ option.code }}">{{ option.label }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="form-label" for="adminNote">Note for the history</label>
+                    <input class="form-control" id="adminNote" name="note" maxlength="200">
+                  </div>
+                  <button class="btn-ll btn-ll--ink btn-ll--sm w-100" type="submit">Update status</button>
+                </form>
+              </div>
+            </div>
+          {% endif %}
+        {% endif %}
+
+        <div class="notice notice--info">
+          <i class="bi bi-info-circle" aria-hidden="true"></i>
+          <span>{{ disclaimer }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

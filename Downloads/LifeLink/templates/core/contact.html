@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Contact LifeLink · Blood donation desk{% endblock %}
+
+{% block content %}
+<section class="section--top-tight">
+  <div class="shell">
+    <div class="row g-5">
+      <div class="col-lg-5">
+        <h1 class="display" style="font-size:clamp(2rem,3.6vw,3rem)">Contact the LifeLink desk</h1>
+        <p class="lead mt-3">
+          Questions about donor eligibility, a request that needs changing, or a certificate that
+          will not open. The desk answers on working days.
+        </p>
+
+        <div class="card-ll mt-4">
+          <div class="card-ll__body">
+            <div class="copy-strip mb-2">
+              <i class="bi bi-telephone" aria-hidden="true"></i>
+              <span>{{ contact_details.phone }}</span>
+            </div>
+            <div class="copy-strip mb-2">
+              <i class="bi bi-envelope" aria-hidden="true"></i>
+              <span>{{ contact_details.email }}</span>
+            </div>
+            <div class="copy-strip mb-2">
+              <i class="bi bi-geo-alt" aria-hidden="true"></i>
+              <span>{{ contact_details.address }}</span>
+            </div>
+            <div class="copy-strip">
+              <i class="bi bi-clock" aria-hidden="true"></i>
+              <span>{{ contact_details.hours }}</span>
+            </div>
+          </div>
+          <div class="card-ll__foot">
+            <p class="tiny muted mb-0">
+              For a patient who needs blood today, raise an
+              <a href="{% url 'blood:sos_create' %}">emergency request</a> instead of a message. It
+              reaches the compatible donors in that city immediately.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        {% include "partials/messages.html" %}
+        <div class="form-panel">
+          <h2 class="form-panel__title">Send a message</h2>
+          <p class="form-panel__sub">Include the request reference if your message is about an existing request.</p>
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="row g-3">
+              <div class="col-md-6">{% include "partials/field.html" with field=form.name %}</div>
+              <div class="col-md-6">{% include "partials/field.html" with field=form.email %}</div>
+              <div class="col-md-6">{% include "partials/field.html" with field=form.phone %}</div>
+              <div class="col-md-6">{% include "partials/field.html" with field=form.subject %}</div>
+              <div class="col-12">{% include "partials/field.html" with field=form.message %}</div>
+            </div>
+            <button class="btn-ll btn-ll--primary mt-2" type="submit">
+              <i class="bi bi-send" aria-hidden="true"></i> Send message
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

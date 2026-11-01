@@ -1,0 +1,192 @@
+{% extends "console/base.html" %}
+{% load humanize %}
+
+{% block title %}Recipient dashboard · LifeLink{% endblock %}
+
+{% block dashboard %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Request desk</h1>
+    <p class="page-sub">
+      {{ counts.active }} active request{{ counts.active|pluralize }} ·
+      {% if profile %}{{ profile.get_kind_display }}{% if profile.organisation %} · {{ profile.organisation }}{% endif %}{% else %}Recipient account{% endif %}
+    </p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn-ll btn-ll--primary btn-ll--sm" href="{% url 'blood:request_create' %}">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i> New request
+    </a>
+    <a class="btn-ll btn-ll--danger-quiet btn-ll--sm" href="{% url 'blood:sos_create' %}">
+      <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i> Emergency
+    </a>
+  </div>
+</div>
+
+<div class="kpi-grid mb-4">
+  <div class="kpi">
+    <div class="kpi__label"><i class="bi bi-activity" aria-hidden="true"></i> Active requests</div>
+    <div class="kpi__value">{{ counts.active }}</div>
+    <div class="kpi__note">Open in the lifecycle</div>
+  </div>
+  <div class="kpi kpi--brand">
+    <div class="kpi__label"><i class="bi bi-exclamation-octagon" aria-hidden="true"></i> Emergency</div>
+    <div class="kpi__value">{{ counts.emergency }}</div>
+    <div class="kpi__note">Watched by administrators</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label"><i class="bi bi-check2-circle" aria-hidden="true"></i> Fulfilled</div>
+    <div class="kpi__value">{{ counts.fulfilled }}</div>
+    <div class="kpi__note">Units met by donations</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label"><i class="bi bi-journal-text" aria-hidden="true"></i> All requests</div>
+    <div class="kpi__value">{{ counts.total }}</div>
+    <div class="kpi__note">Including cancelled</div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card-ll mb-4">
+      <div class="card-ll__head">
+        <h2 class="card-ll__title">Active requests</h2>
+        <a class="tiny link-ll" href="{% url 'console:my_requests' %}">Request history</a>
+      </div>
+      {% if my_requests %}
+        <div class="card-ll__body d-grid gap-3">
+          {% for item in my_requests %}
+            <div class="card-ll p-3" style="box-shadow:none">
+              <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
+                <div class="d-flex gap-3">
+                  <span class="bg-plate {% if item.is_emergency %}bg-plate--emergency{% endif %}">{{ item.blood_group }}</span>
+                  <div>
+                    <p class="mb-1 fw-semibold">
+                      <a class="link-quiet" href="{{ item.get_absolute_url }}">{{ item.patient_name }}</a>
+                    </p>
+                    <p class="tiny muted mb-2">
+                      <span class="num">{{ item.reference }}</span> · {{ item.hospital_name }} ·
+                      needed {{ item.required_by|date:"d M Y" }}
+                    </p>
+                    <div class="d-flex flex-wrap gap-1">
+                      <span class="chip {{ item.urgency_chip_class }}">{{ item.get_urgency_display }}</span>
+                      <span class="chip {{ item.status_chip_class }}">{{ item.get_status_display }}</span>
+                      <span class="chip chip--muted">{{ item.units_fulfilled }}/{{ item.units_required }} units</span>
+                      <span class="chip chip--info">{{ item.response_count }} response{{ item.response_count|pluralize }}</span>
+                    </div>
+                  </div>
+                </div>
+                <a class="btn-ll btn-ll--ghost btn-ll--sm" href="{{ item.get_absolute_url }}">Manage</a>
+              </div>
+              <div class="progress-ll mt-3" role="img" aria-label="{{ item.progress_percent }} percent through the lifecycle">
+                <span class="progress-ll__fill {% if item.is_emergency %}progress-ll__fill--brand{% endif %}" data-meter="{{ item.progress_percent }}"></span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card-ll__body">
+          <div class="empty" style="border:0;background:transparent">
+            <div class="empty__icon" aria-hidden="true"><i class="bi bi-clipboard2-plus"></i></div>
+            <p class="empty__title">No active request</p>
+            <p class="empty__body">Raise a request with the blood group, units and hospital. Compatible donors are notified when it goes live.</p>
+            <div class="empty__action">
+              <a class="btn-ll btn-ll--primary btn-ll--sm" href="{% url 'blood:request_create' %}">Raise a request</a>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card-ll">
+      <div class="card-ll__head">
+        <h2 class="card-ll__title">Responses waiting for you</h2>
+        <span class="chip chip--muted">{{ pending_responses|length }}</span>
+      </div>
+      {% if pending_responses %}
+        <div class="table-wrap" style="border:0;border-radius:0">
+          <table class="table-ruled">
+            <thead><tr><th>Donor</th><th>Request</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+            <tbody>
+              {% for response in pending_responses %}
+                <tr>
+                  <td>
+                    <span class="d-flex align-items-center gap-2">
+                      <span class="avatar-disc avatar-disc--sm">{{ response.donor.initials }}</span>
+                      <span>
+                        <span class="d-block fw-semibold">{{ response.donor.display_name }}</span>
+                        <span class="tiny muted">{{ response.donor.donorprofile.blood_group }} · {{ response.donor.donorprofile.city }}</span>
+                      </span>
+                    </span>
+                  </td>
+                  <td class="tiny"><span class="num">{{ response.request.reference }}</span><span class="d-block muted">{{ response.request.patient_name }}</span></td>
+                  <td><span class="chip {{ response.status_chip_class }}">{{ response.get_status_display }}</span></td>
+                  <td class="text-end">
+                    <div class="d-inline-flex gap-1">
+                      {% if response.status == 'interested' %}
+                        <form method="post" action="{% url 'blood:response_action' response.pk %}">
+                          {% csrf_token %}<input type="hidden" name="action" value="confirmed">
+                          <button class="btn-ll btn-ll--primary btn-ll--sm" type="submit">Confirm</button>
+                        </form>
+                      {% elif response.status == 'confirmed' %}
+                        <form method="post" action="{% url 'blood:response_action' response.pk %}">
+                          {% csrf_token %}<input type="hidden" name="action" value="completed">
+                          <button class="btn-ll btn-ll--primary btn-ll--sm" type="submit">Mark donated</button>
+                        </form>
+                      {% endif %}
+                      <a class="btn-ll btn-ll--quiet btn-ll--sm" href="{{ response.request.get_absolute_url }}">Open</a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="card-ll__body">
+          <p class="tiny muted mb-0">No donor response is waiting for confirmation.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card-ll mb-3">
+      <div class="card-ll__head"><h2 class="card-ll__title">Recent requests</h2></div>
+      <div class="card-ll__body d-grid gap-2">
+        {% for item in recent_requests %}
+          <a class="d-flex justify-content-between align-items-center gap-2 border-bottom pb-2" href="{{ item.get_absolute_url }}">
+            <span>
+              <span class="d-block tiny fw-semibold">{{ item.patient_name }}</span>
+              <span class="tiny muted num">{{ item.reference }}</span>
+            </span>
+            <span class="chip {{ item.status_chip_class }}">{{ item.get_status_display }}</span>
+          </a>
+        {% empty %}
+          <p class="tiny muted mb-0">No request raised yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card-ll mb-3">
+      <div class="card-ll__head"><h2 class="card-ll__title">Before you raise a request</h2></div>
+      <div class="card-ll__body">
+        <ul class="reasons">
+          <li><i class="bi bi-check2" aria-hidden="true"></i><span>Confirm the blood group and units with the treating doctor.</span></li>
+          <li><i class="bi bi-check2" aria-hidden="true"></i><span>Add the ward or bed number so donors reach the right desk.</span></li>
+          <li><i class="bi bi-check2" aria-hidden="true"></i><span>Keep the coordination number reachable.</span></li>
+          <li><i class="bi bi-check2" aria-hidden="true"></i><span>Mark the request fulfilled once the units are received.</span></li>
+        </ul>
+        <a class="btn-ll btn-ll--ghost btn-ll--sm w-100 mt-3" href="{% url 'accounts:donor_directory' %}">Browse donors as backup</a>
+      </div>
+    </div>
+
+    <div class="notice notice--info">
+      <i class="bi bi-info-circle" aria-hidden="true"></i>
+      <span>
+        LifeLink lists donors whose red cells are compatible. Crossmatching and medical screening at
+        the hospital decide whether a transfusion can happen.
+      </span>
+    </div>
+  </div>
+</div>
+{% endblock %}
